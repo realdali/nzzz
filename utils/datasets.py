@@ -11,6 +11,7 @@ from utils.augmentations import horisontal_flip
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 
+class_names = ['带电芯充电宝', '不带电芯充电宝']
 
 def pad_to_square(img, pad_value):
     c, h, w = img.shape
@@ -126,7 +127,7 @@ class ListDataset(Dataset):
                 lines = f.readlines()
             if any(lines) == 1:
                 splitlines = [x.strip().split(' ') for x in lines]
-                boxes = [[classes.index(x[1]), get_format_center(x[2], x[4], width), get_format_center(x[3], x[4], height), get_format_size(x[2], x[4], width), get_format_size(x[3], x[5], height)] for x in splitlines]
+                boxes = [[class_names.index(x[1]), get_format_center(x[2], x[4], width), get_format_center(x[3], x[4], height), get_format_size(x[2], x[4], width), get_format_size(x[3], x[5], height)] for x in splitlines]
             
             boxes = torch.from_numpy(boxes)
 
