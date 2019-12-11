@@ -114,7 +114,7 @@ class ListDataset(Dataset):
         #  Label
         # ---------
 
-        label_path = self.label_files[index % len(self.img_files)].rstrip()
+        label_path = self.label_files[index % len(self.img_names)].rstrip().replace('\n', '')
 
         targets = None
         if os.path.exists(label_path):
@@ -127,9 +127,12 @@ class ListDataset(Dataset):
                 lines = f.readlines()
             if any(lines) == 1:
                 splitlines = [x.strip().split(' ') for x in lines]
-                boxes = [[class_names.index(x[1]), get_format_center(x[2], x[4], width), get_format_center(x[3], x[4], height), get_format_size(x[2], x[4], width), get_format_size(x[3], x[5], height)] for x in splitlines]
-            
-            boxes = torch.from_numpy(boxes)
+                boxes = []
+                for x in splitlines:
+                    if x[1] in class_names:
+                        boxes.append([class_names.index(x[1]), get_format_center(x[2], x[4], width), get_format_center(x[3], x[4], height), get_format_size(x[2], x[4], width), get_format_size(x[3], x[5], height)])   
+                
+            boxes = torch.from_numpy(np.array(boxes))
 
             # Extract coordinates for unpadded + unscaled image
             x1 = w_factor * (boxes[:, 1] - boxes[:, 3] / 2)
@@ -155,7 +158,7 @@ class ListDataset(Dataset):
             if np.random.random() < 0.5:
                 img, targets = horisontal_flip(img, targets)
 
-        return img_path, img, targets
+        return img_name, img, targets
 
     def collate_fn(self, batch):
         paths, imgs, targets = list(zip(*batch))
@@ -174,4 +177,4 @@ class ListDataset(Dataset):
         return paths, imgs, targets
 
     def __len__(self):
-        return len(self.img_files)
+        return len(self.img_names)

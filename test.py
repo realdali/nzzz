@@ -84,13 +84,14 @@ if __name__ == "__main__":
         model.load_darknet_weights(opt.weights_path)
     else:
         # Load checkpoint weights
-        model.load_state_dict(torch.load(opt.weights_path))
+        # model.load_state_dict(torch.load(opt.weights_path))
+        model.load_state_dict(torch.load(opt.weights_path, map_location='cpu'))
 
     print("Compute mAP...")
 
     precision, recall, AP, f1, ap_class = evaluate(
         model,
-        valid_path=pt.valid_path,
+        valid_path=opt.valid_path,
         images_path=opt.images_path,
         labels_path=opt.labels_path,
         iou_thres=opt.iou_thres,
