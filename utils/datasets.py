@@ -11,6 +11,7 @@ from utils.augmentations import horisontal_flip
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 
+class_names = ['带电芯充电宝', '不带电芯充电宝']
 
 def pad_to_square(img, pad_value):
     c, h, w = img.shape
@@ -35,6 +36,14 @@ def random_resize(images, min_size=288, max_size=448):
     images = F.interpolate(images, size=new_size, mode="nearest")
     return images
 
+# 计算中心点，归一化
+def get_format_center(min_value, max_value, total_size):
+    return (int(min_value) + int(max_value)) / 2 / total_size
+# 计算距离，归一化
+
+def get_format_size(min_value, max_value, total_size):
+    return (int(max_value) - int(min_value)) / total_size
+
 
 class ImageFolder(Dataset):
     def __init__(self, folder_path, img_size=416):
@@ -57,14 +66,18 @@ class ImageFolder(Dataset):
 
 
 class ListDataset(Dataset):
-    def __init__(self, list_path, img_size=416, augment=True, multiscale=True, normalized_labels=True):
-        with open(list_path, "r") as file:
-            self.img_files = file.readlines()
+    def __init__(self, valid_path, images_path, labels_path, img_size=416, augment=True, multiscale=True, normalized_labels=True):
+        # 读取的文件为图片相对地址，为test的目录，里边是图片名称
+        with open(valid_path, "r") as file:
+            self.img_names = file.readlines()
 
+        # 获取标识文件
+        # TODO @yuan.zhang, 需确定路径是否加/
         self.label_files = [
-            path.replace("images", "labels").replace(".png", ".txt").replace(".jpg", ".txt")
-            for path in self.img_files
+            labels_path + img_name + '.txt'
+            for img_name in self.img_names
         ]
+        self.images_path = images_path
         self.img_size = img_size
         self.max_objects = 100
         self.augment = augment
@@ -80,10 +93,11 @@ class ListDataset(Dataset):
         #  Image
         # ---------
 
-        img_path = self.img_files[index % len(self.img_files)].rstrip()
+        img_name = self.img_names[index % len(self.img_names)].rstrip()
 
         # Extract image as PyTorch tensor
-        img = transforms.ToTensor()(Image.open(img_path).convert('RGB'))
+        imgObj = Image.open(self.images_path + img_name + '.jpg')
+        img = transforms.ToTensor()(imgObj.convert('RGB'))
 
         # Handle images with less than three channels
         if len(img.shape) != 3:
@@ -100,11 +114,25 @@ class ListDataset(Dataset):
         #  Label
         # ---------
 
-        label_path = self.label_files[index % len(self.img_files)].rstrip()
+        label_path = self.label_files[index % len(self.img_names)].rstrip().replace('\n', '')
 
         targets = None
         if os.path.exists(label_path):
-            boxes = torch.from_numpy(np.loadtxt(label_path).reshape(-1, 5))
+            # 数据格式转换
+            # 01013328.TIFF 带电芯充电宝 631 700 737 879
+            # =>
+            # 0 0.515 0.5 0.21694873 0.18286777
+            width, height = imgObj.size
+            with open(label_path, 'r') as f:
+                lines = f.readlines()
+            if any(lines) == 1:
+                splitlines = [x.strip().split(' ') for x in lines]
+                boxes = []
+                for x in splitlines:
+                    if x[1] in class_names:
+                        boxes.append([class_names.index(x[1]), get_format_center(x[2], x[4], width), get_format_center(x[3], x[5], height), get_format_size(x[2], x[4], width), get_format_size(x[3], x[5], height)])   
+            boxes = torch.from_numpy(np.array(boxes))
+
             # Extract coordinates for unpadded + unscaled image
             x1 = w_factor * (boxes[:, 1] - boxes[:, 3] / 2)
             y1 = h_factor * (boxes[:, 2] - boxes[:, 4] / 2)
@@ -129,7 +157,7 @@ class ListDataset(Dataset):
             if np.random.random() < 0.5:
                 img, targets = horisontal_flip(img, targets)
 
-        return img_path, img, targets
+        return img_name, img, targets
 
     def collate_fn(self, batch):
         paths, imgs, targets = list(zip(*batch))
@@ -148,4 +176,4 @@ class ListDataset(Dataset):
         return paths, imgs, targets
 
     def __len__(self):
-        return len(self.img_files)
+        return len(self.img_names)

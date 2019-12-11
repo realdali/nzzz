@@ -20,11 +20,11 @@ from torch.autograd import Variable
 import torch.optim as optim
 
 
-def evaluate(model, path, iou_thres, conf_thres, nms_thres, img_size, batch_size):
+def evaluate(model, valid_path, images_path, labels_path, iou_thres, conf_thres, nms_thres, img_size, batch_size):
     model.eval()
 
     # Get dataloader
-    dataset = ListDataset(path, img_size=img_size, augment=False, multiscale=False)
+    dataset = ListDataset(valid_path, images_path, labels_path, img_size=img_size, augment=False, multiscale=False)
     dataloader = torch.utils.data.DataLoader(
         dataset, batch_size=batch_size, shuffle=False, num_workers=1, collate_fn=dataset.collate_fn
     )
@@ -60,7 +60,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch_size", type=int, default=8, help="size of each image batch")
     parser.add_argument("--model_def", type=str, default="config/yolov3.cfg", help="path to model definition file")
-    parser.add_argument("--data_config", type=str, default="config/coco.data", help="path to data config file")
+    parser.add_argument("--valid_path", type=str, default="", help="验证集文件")
+    parser.add_argument("--images_path", type=str, default="", help="图片路径")
+    parser.add_argument("--labels_path", type=str, default="", help="标注路径")
     parser.add_argument("--weights_path", type=str, default="weights/yolov3.weights", help="path to weights file")
     parser.add_argument("--class_path", type=str, default="data/coco.names", help="path to class label file")
     parser.add_argument("--iou_thres", type=float, default=0.5, help="iou threshold required to qualify as detected")
@@ -73,9 +75,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    data_config = parse_data_config(opt.data_config)
-    valid_path = data_config["valid"]
-    class_names = load_classes(data_config["names"])
+    class_names = ['带电芯充电宝', '不带电芯充电宝'] #class_name
 
     # Initiate model
     model = Darknet(opt.model_def).to(device)
@@ -84,13 +84,16 @@ if __name__ == "__main__":
         model.load_darknet_weights(opt.weights_path)
     else:
         # Load checkpoint weights
-        model.load_state_dict(torch.load(opt.weights_path))
+        # model.load_state_dict(torch.load(opt.weights_path))
+        model.load_state_dict(torch.load(opt.weights_path, map_location='cpu'))
 
     print("Compute mAP...")
 
     precision, recall, AP, f1, ap_class = evaluate(
         model,
-        path=valid_path,
+        valid_path=opt.valid_path,
+        images_path=opt.images_path,
+        labels_path=opt.labels_path,
         iou_thres=opt.iou_thres,
         conf_thres=opt.conf_thres,
         nms_thres=opt.nms_thres,
