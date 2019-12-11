@@ -130,8 +130,7 @@ class ListDataset(Dataset):
                 boxes = []
                 for x in splitlines:
                     if x[1] in class_names:
-                        boxes.append([class_names.index(x[1]), get_format_center(x[2], x[4], width), get_format_center(x[3], x[4], height), get_format_size(x[2], x[4], width), get_format_size(x[3], x[5], height)])   
-                
+                        boxes.append([class_names.index(x[1]), get_format_center(x[2], x[4], width), get_format_center(x[3], x[5], height), get_format_size(x[2], x[4], width), get_format_size(x[3], x[5], height)])   
             boxes = torch.from_numpy(np.array(boxes))
 
             # Extract coordinates for unpadded + unscaled image
