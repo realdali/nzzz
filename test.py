@@ -59,12 +59,11 @@ def evaluate(model, valid_path, images_path, labels_path, iou_thres, conf_thres,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch_size", type=int, default=8, help="size of each image batch")
-    parser.add_argument("--model_def", type=str, default="config/yolov3.cfg", help="path to model definition file")
-    parser.add_argument("--valid_path", type=str, default="", help="验证集文件")
-    parser.add_argument("--images_path", type=str, default="", help="图片路径")
-    parser.add_argument("--labels_path", type=str, default="", help="标注路径")
-    parser.add_argument("--weights_path", type=str, default="weights/yolov3.weights", help="path to weights file")
-    parser.add_argument("--class_path", type=str, default="data/coco.names", help="path to class label file")
+    parser.add_argument("--model_def", type=str, default="config/custom.cfg", help="path to model definition file")
+    parser.add_argument("--valid_path", type=str, default="data/valid.txt", help="验证集文件")
+    parser.add_argument("--images_path", type=str, default="data/Image/", help="图片路径")
+    parser.add_argument("--labels_path", type=str, default="data/Annotation/", help="标注路径")
+    parser.add_argument("--weights_path", type=str, default="weights/ckpt_89.pth", help="path to weights file")
     parser.add_argument("--iou_thres", type=float, default=0.5, help="iou threshold required to qualify as detected")
     parser.add_argument("--conf_thres", type=float, default=0.001, help="object confidence threshold")
     parser.add_argument("--nms_thres", type=float, default=0.5, help="iou thresshold for non-maximum suppression")
@@ -84,8 +83,10 @@ if __name__ == "__main__":
         model.load_darknet_weights(opt.weights_path)
     else:
         # Load checkpoint weights
-        # model.load_state_dict(torch.load(opt.weights_path))
-        model.load_state_dict(torch.load(opt.weights_path, map_location='cpu'))
+        if torch.cuda.is_available():
+            model.load_state_dict(torch.load(opt.weights_path))
+        else:
+            model.load_state_dict(torch.load(opt.weights_path, map_location='cpu'))
 
     print("Compute mAP...")
 
