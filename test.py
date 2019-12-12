@@ -93,8 +93,8 @@ if __name__ == "__main__":
     precision, recall, AP, f1, ap_class = evaluate(
         model,
         valid_path=opt.valid_path,
-        images_path=opt.images_path,
-        labels_path=opt.labels_path,
+        images_path=(opt.images_path + '/').replace('//', '/'),
+        labels_path=(opt.labels_path + '/').replace('//', '/'),
         iou_thres=opt.iou_thres,
         conf_thres=opt.conf_thres,
         nms_thres=opt.nms_thres,
