@@ -23,10 +23,9 @@ from matplotlib.ticker import NullLocator
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--image_folder", type=str, default="data/samples", help="path to dataset")
-    parser.add_argument("--model_def", type=str, default="config/yolov3.cfg", help="path to model definition file")
-    parser.add_argument("--weights_path", type=str, default="weights/yolov3.weights", help="path to weights file")
-    parser.add_argument("--class_path", type=str, default="data/coco.names", help="path to class label file")
+    parser.add_argument("--image_folder", type=str, default="data/Image", help="path to dataset")
+    parser.add_argument("--model_def", type=str, default="config/custom.cfg", help="path to model definition file")
+    parser.add_argument("--weights_path", type=str, default="weights/ckpt_89.pth", help="path to weights file")
     parser.add_argument("--conf_thres", type=float, default=0.8, help="object confidence threshold")
     parser.add_argument("--nms_thres", type=float, default=0.4, help="iou thresshold for non-maximum suppression")
     parser.add_argument("--batch_size", type=int, default=1, help="size of the batches")
@@ -48,7 +47,10 @@ if __name__ == "__main__":
         model.load_darknet_weights(opt.weights_path)
     else:
         # Load checkpoint weights
-        model.load_state_dict(torch.load(opt.weights_path))
+        if torch.cuda.is_available():
+            model.load_state_dict(torch.load(opt.weights_path))
+        else:
+            model.load_state_dict(torch.load(opt.weights_path, map_location='cpu'))
 
     model.eval()  # Set in evaluation mode
 
@@ -59,7 +61,8 @@ if __name__ == "__main__":
         num_workers=opt.n_cpu,
     )
 
-    classes = load_classes(opt.class_path)  # Extracts class labels from file
+    #classes = ['带电芯充电宝', '不带电芯充电宝']  # class_name
+    classes = ['core_battery', 'coreless_battery']
 
     Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 

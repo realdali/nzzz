@@ -71,10 +71,14 @@ class ListDataset(Dataset):
         with open(valid_path, "r") as file:
             self.img_names = file.readlines()
 
+        self.img_names = [
+            img_name.rstrip().replace('\n', '')
+            for img_name in self.img_names
+        ]
         # 获取标识文件
         # TODO @yuan.zhang, 需确定路径是否加/
         self.label_files = [
-            labels_path + img_name + '.txt'
+            labels_path + img_name.rstrip().replace('\n', '') + '.txt'
             for img_name in self.img_names
         ]
         self.images_path = images_path

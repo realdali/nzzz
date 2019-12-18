@@ -27,8 +27,11 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=100, help="number of epochs")
     parser.add_argument("--batch_size", type=int, default=8, help="size of each image batch")
     parser.add_argument("--gradient_accumulations", type=int, default=2, help="number of gradient accums before step")
-    parser.add_argument("--model_def", type=str, default="config/yolov3.cfg", help="path to model definition file")
-    parser.add_argument("--data_config", type=str, default="config/coco.data", help="path to data config file")
+    parser.add_argument("--model_def", type=str, default="config/custom.cfg", help="path to model definition file")
+    parser.add_argument("--train_path", type=str, default="data/train.txt", help="训练集文件")
+    parser.add_argument("--valid_path", type=str, default="data/valid.txt", help="验证集文件")
+    parser.add_argument("--images_path", type=str, default="data/Image/", help="图片路径")
+    parser.add_argument("--labels_path", type=str, default="data/Annotation/", help="标注路径")
     parser.add_argument("--pretrained_weights", type=str, help="if specified starts from checkpoint model")
     parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=416, help="size of each image dimension")
@@ -46,11 +49,11 @@ if __name__ == "__main__":
     os.makedirs("output", exist_ok=True)
     os.makedirs("checkpoints", exist_ok=True)
 
-    # Get data configuration
-    data_config = parse_data_config(opt.data_config)
-    train_path = data_config["train"]
-    valid_path = data_config["valid"]
-    class_names = load_classes(data_config["names"])
+    train_path = opt.train_path
+    valid_path = opt.valid_path
+    images_path = (opt.images_path + '/').replace('//', '/')
+    labels_path = (opt.labels_path + '/').replace('//', '/')
+    class_names = ['带电芯充电宝', '不带电芯充电宝'] #class_name
 
     # Initiate model
     model = Darknet(opt.model_def).to(device)
@@ -64,7 +67,7 @@ if __name__ == "__main__":
             model.load_darknet_weights(opt.pretrained_weights)
 
     # Get dataloader
-    dataset = ListDataset(train_path, augment=True, multiscale=opt.multiscale_training)
+    dataset = ListDataset(train_path, images_path, labels_path, augment=True, multiscale=opt.multiscale_training)
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=opt.batch_size,
@@ -152,7 +155,9 @@ if __name__ == "__main__":
             # Evaluate the model on the validation set
             precision, recall, AP, f1, ap_class = evaluate(
                 model,
-                path=valid_path,
+                valid_path= valid_path,
+                images_path= images_path,
+                labels_path= labels_path,
                 iou_thres=0.5,
                 conf_thres=0.5,
                 nms_thres=0.5,
@@ -175,4 +180,4 @@ if __name__ == "__main__":
             print(f"---- mAP {AP.mean()}")
 
         if epoch % opt.checkpoint_interval == 0:
-            torch.save(model.state_dict(), f"checkpoints/yolov3_ckpt_%d.pth" % epoch)
+            torch.save(model.state_dict(), f"checkpoints/ckpt_%d.pth" % epoch)

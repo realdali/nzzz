@@ -1,0 +1,10 @@
+core_battery00000003
+core_battery00000010
+core_battery00000021
+core_battery00000029
+core_battery00000035
+coreless_battery00000001
+coreless_battery00000014
+coreless_battery00000023
+coreless_battery00000043
+coreless_battery00000062
