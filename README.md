@@ -1,6 +1,7 @@
 # Installation
 
 ```
+git clone git@github.com:realdali/nzzz.git
 $ cd nzzz/
 $ sudo pip3 install -r requirements.txt
 ```
