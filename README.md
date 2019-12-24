@@ -9,11 +9,11 @@ $ sudo pip3 install -r requirements.txt
 # Test
 
 ```shell
-$ python3 test.py --valid_path data/valid.txt  --images_path data/Image --labels_path data/Annotation
+$ python3 test.py --valid_path data/valid.txt  --img_path data/Image --anno_path data/Annotation
 ```
 
 # Detect
 
 ```shell
-$ python3 detect.py --image_folder data/Image
+$ python3 detect.py --img_path data/Image
 ```

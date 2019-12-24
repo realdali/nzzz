@@ -44,6 +44,15 @@ def get_format_center(min_value, max_value, total_size):
 def get_format_size(min_value, max_value, total_size):
     return (int(max_value) - int(min_value)) / total_size
 
+# 获取图片名称地址
+def getFileNamesByPath(path):  #传入存储的list
+    names = []
+    for file in os.listdir(path):  
+        file_path = os.path.join(path, file)  
+        if not os.path.isdir(file_path) and '.jpg' in file_path:
+            names.append(file)
+    return names
+
 
 class ImageFolder(Dataset):
     def __init__(self, folder_path, img_size=416):
@@ -66,10 +75,12 @@ class ImageFolder(Dataset):
 
 
 class ListDataset(Dataset):
-    def __init__(self, valid_path, images_path, labels_path, img_size=416, augment=True, multiscale=True, normalized_labels=True):
+    def __init__(self, valid_path, img_path, anno_path, img_size=416, augment=True, multiscale=True, normalized_labels=True):
         # 读取的文件为图片相对地址，为test的目录，里边是图片名称
-        with open(valid_path, "r") as file:
-            self.img_names = file.readlines()
+        # with open(valid_path, "r") as file:
+            # self.img_names = file.readlines()
+        # 更改从iamges文件夹获取图片名称，要求格式必须为jpg
+        self.img_names = getFileNamesByPath(img_path);
 
         self.img_names = [
             img_name.rstrip().replace('\n', '')
@@ -78,10 +89,10 @@ class ListDataset(Dataset):
         # 获取标识文件
         # TODO @yuan.zhang, 需确定路径是否加/
         self.label_files = [
-            labels_path + img_name.rstrip().replace('\n', '') + '.txt'
+            anno_path + img_name.rstrip().replace('\n', '').replace('.jpg', '.txt')
             for img_name in self.img_names
         ]
-        self.images_path = images_path
+        self.img_path = img_path
         self.img_size = img_size
         self.max_objects = 100
         self.augment = augment
@@ -100,7 +111,7 @@ class ListDataset(Dataset):
         img_name = self.img_names[index % len(self.img_names)].rstrip()
 
         # Extract image as PyTorch tensor
-        imgObj = Image.open(self.images_path + img_name + '.jpg')
+        imgObj = Image.open(self.img_path + img_name)
         img = transforms.ToTensor()(imgObj.convert('RGB'))
 
         # Handle images with less than three channels
