@@ -23,12 +23,13 @@ from matplotlib.ticker import NullLocator
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--image_folder", type=str, default="data/Image", help="path to dataset")
+    parser.add_argument("--img_path", type=str, default="data/Image", help="path to dataset")
+    parser.add_argument("--anno_path", type=str, default="data/Annotation/", help="标注路径")
     parser.add_argument("--model_def", type=str, default="config/custom.cfg", help="path to model definition file")
     parser.add_argument("--weights_path", type=str, default="weights/ckpt_89.pth", help="path to weights file")
     parser.add_argument("--conf_thres", type=float, default=0.8, help="object confidence threshold")
     parser.add_argument("--nms_thres", type=float, default=0.4, help="iou thresshold for non-maximum suppression")
-    parser.add_argument("--batch_size", type=int, default=1, help="size of the batches")
+    parser.add_argument("--batch_size", type=int, default=4, help="size of the batches")
     parser.add_argument("--n_cpu", type=int, default=0, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=416, help="size of each image dimension")
     parser.add_argument("--checkpoint_model", type=str, help="path to checkpoint model")
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     model.eval()  # Set in evaluation mode
 
     dataloader = DataLoader(
-        ImageFolder(opt.image_folder, img_size=opt.img_size),
+        ImageFolder(opt.img_path, img_size=opt.img_size),
         batch_size=opt.batch_size,
         shuffle=False,
         num_workers=opt.n_cpu,
@@ -95,50 +96,29 @@ if __name__ == "__main__":
     colors = [cmap(i) for i in np.linspace(0, 1, 20)]
 
     print("\nSaving images:")
+    core_battery_file = open('predicted_file/core_battery.txt', 'w')   #只写模式打开file
+    coreless_battery_file = open('predicted_file/coreless_battery.txt', 'w')   #只写模式打开file
     # Iterate through images and save plot of detections
     for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
 
         print("(%d) Image: '%s'" % (img_i, path))
 
-        # Create plot
         img = np.array(Image.open(path))
-        plt.figure()
-        fig, ax = plt.subplots(1)
-        ax.imshow(img)
 
+        filename = path.split("/")[-1].split(".")[0]
         # Draw bounding boxes and labels of detections
         if detections is not None:
             # Rescale boxes to original image
             detections = rescale_boxes(detections, opt.img_size, img.shape[:2])
-            unique_labels = detections[:, -1].cpu().unique()
-            n_cls_preds = len(unique_labels)
-            bbox_colors = random.sample(colors, n_cls_preds)
             for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
+                # print(filename, classes[int(cls_pred)], cls_conf.item(),x1, y1, x2, y2)
+                # classes[int(cls_pred)]
+                line_info = "%s %.5f %.2f %.2f %.2f %.2f\n" % (filename, cls_conf.item(),x1, y1, x2, y2)
+                if classes[int(cls_pred)] == 'core_battery':
+                    core_battery_file.writelines(line_info)
+                else:
+                    coreless_battery_file.writelines(line_info)
+    core_battery_file.close()
+    coreless_battery_file.close()
 
-                print("\t+ Label: %s, Conf: %.5f" % (classes[int(cls_pred)], cls_conf.item()))
 
-                box_w = x2 - x1
-                box_h = y2 - y1
-
-                color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
-                # Create a Rectangle patch
-                bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor="none")
-                # Add the bbox to the plot
-                ax.add_patch(bbox)
-                # Add label
-                plt.text(
-                    x1,
-                    y1,
-                    s=classes[int(cls_pred)],
-                    color="white",
-                    verticalalignment="top",
-                    bbox={"color": color, "pad": 0},
-                )
-
-        # Save generated image with detections
-        plt.axis("off")
-        plt.gca().xaxis.set_major_locator(NullLocator())
-        plt.gca().yaxis.set_major_locator(NullLocator())
-        filename = path.split("/")[-1].split(".")[0]
-        plt.savefig(f"output/{filename}.png", bbox_inches="tight", pad_inches=0.0)
-        plt.close()

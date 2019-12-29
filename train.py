@@ -30,8 +30,8 @@ if __name__ == "__main__":
     parser.add_argument("--model_def", type=str, default="config/custom.cfg", help="path to model definition file")
     parser.add_argument("--train_path", type=str, default="data/train.txt", help="训练集文件")
     parser.add_argument("--valid_path", type=str, default="data/valid.txt", help="验证集文件")
-    parser.add_argument("--images_path", type=str, default="data/Image/", help="图片路径")
-    parser.add_argument("--labels_path", type=str, default="data/Annotation/", help="标注路径")
+    parser.add_argument("--img_path", type=str, default="data/Image/", help="图片路径")
+    parser.add_argument("--anno_path", type=str, default="data/Annotation/", help="标注路径")
     parser.add_argument("--pretrained_weights", type=str, help="if specified starts from checkpoint model")
     parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=416, help="size of each image dimension")
@@ -51,8 +51,8 @@ if __name__ == "__main__":
 
     train_path = opt.train_path
     valid_path = opt.valid_path
-    images_path = (opt.images_path + '/').replace('//', '/')
-    labels_path = (opt.labels_path + '/').replace('//', '/')
+    img_path = (opt.img_path + '/').replace('//', '/')
+    anno_path = (opt.anno_path + '/').replace('//', '/')
     class_names = ['带电芯充电宝', '不带电芯充电宝'] #class_name
 
     # Initiate model
@@ -67,7 +67,7 @@ if __name__ == "__main__":
             model.load_darknet_weights(opt.pretrained_weights)
 
     # Get dataloader
-    dataset = ListDataset(train_path, images_path, labels_path, augment=True, multiscale=opt.multiscale_training)
+    dataset = ListDataset(train_path, img_path, anno_path, augment=True, multiscale=opt.multiscale_training)
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=opt.batch_size,
@@ -156,8 +156,8 @@ if __name__ == "__main__":
             precision, recall, AP, f1, ap_class = evaluate(
                 model,
                 valid_path= valid_path,
-                images_path= images_path,
-                labels_path= labels_path,
+                img_path= img_path,
+                anno_path= anno_path,
                 iou_thres=0.5,
                 conf_thres=0.5,
                 nms_thres=0.5,

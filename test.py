@@ -20,11 +20,11 @@ from torch.autograd import Variable
 import torch.optim as optim
 
 
-def evaluate(model, valid_path, images_path, labels_path, iou_thres, conf_thres, nms_thres, img_size, batch_size):
+def evaluate(model, valid_path, img_path, anno_path, iou_thres, conf_thres, nms_thres, img_size, batch_size):
     model.eval()
 
     # Get dataloader
-    dataset = ListDataset(valid_path, images_path, labels_path, img_size=img_size, augment=False, multiscale=False)
+    dataset = ListDataset(valid_path, img_path, anno_path, img_size=img_size, augment=False, multiscale=False)
     dataloader = torch.utils.data.DataLoader(
         dataset, batch_size=batch_size, shuffle=False, num_workers=1, collate_fn=dataset.collate_fn
     )
@@ -61,8 +61,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=8, help="size of each image batch")
     parser.add_argument("--model_def", type=str, default="config/custom.cfg", help="path to model definition file")
     parser.add_argument("--valid_path", type=str, default="data/valid.txt", help="验证集文件")
-    parser.add_argument("--images_path", type=str, default="data/Image/", help="图片路径")
-    parser.add_argument("--labels_path", type=str, default="data/Annotation/", help="标注路径")
+    parser.add_argument("--img_path", type=str, default="data/Image/", help="图片路径")
+    parser.add_argument("--anno_path", type=str, default="data/Annotation/", help="标注路径")
     parser.add_argument("--weights_path", type=str, default="weights/ckpt_89.pth", help="path to weights file")
     parser.add_argument("--iou_thres", type=float, default=0.5, help="iou threshold required to qualify as detected")
     parser.add_argument("--conf_thres", type=float, default=0.001, help="object confidence threshold")
@@ -93,8 +93,8 @@ if __name__ == "__main__":
     precision, recall, AP, f1, ap_class = evaluate(
         model,
         valid_path=opt.valid_path,
-        images_path=(opt.images_path + '/').replace('//', '/'),
-        labels_path=(opt.labels_path + '/').replace('//', '/'),
+        img_path=(opt.img_path + '/').replace('//', '/'),
+        anno_path=(opt.anno_path + '/').replace('//', '/'),
         iou_thres=opt.iou_thres,
         conf_thres=opt.conf_thres,
         nms_thres=opt.nms_thres,
